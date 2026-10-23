@@ -341,7 +341,8 @@ app.get("/api/health", (req, res) => {
     });
 });
 
-// ---------- Signup ----------
+
+ // ---------- Signup ----------
 
 app.post("/api/auth/signup", async (req, res, next) => {
     try {
@@ -398,14 +399,27 @@ app.post("/api/auth/signup", async (req, res, next) => {
             throw error;
         }
 
+        const token = jwt.sign(
+            { sub: user.id, email: user.email },
+            JWT_SECRET,
+            { expiresIn: "2h" }
+        );
+
         return res.status(201).json({
             success: true,
-            message: "Account created successfully. Please log in."
+            message: "Account created successfully.",
+            token,
+            user: {
+                id: user.id,
+                name: user.name,
+                email: user.email
+            }
         });
     } catch (error) {
         next(error);
     }
 });
+
 
 // ---------- Login ----------
 
