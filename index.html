@@ -1,0 +1,737 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Smart Issue Router</title>
+
+    <style>
+        :root {
+            color-scheme: light;
+            --bg: #f4f7fb;
+            --surface: #ffffff;
+            --ink: #172033;
+            --muted: #68758b;
+            --line: #e2e8f0;
+            --primary: #4f46e5;
+            --primary-dark: #3730a3;
+            --soft-primary: #eef2ff;
+            --shadow: 0 12px 32px rgba(15, 23, 42, .06);
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            font-family: Inter, "Segoe UI", Arial, sans-serif;
+            background:
+                radial-gradient(ellipse at top left, rgba(99, 102, 241, .09), transparent 36%),
+                var(--bg);
+            color: var(--ink);
+            line-height: 1.55;
+        }
+
+        header {
+            position: relative;
+            overflow: hidden;
+            padding: 34px max(22px, calc((100% - 1120px) / 2));
+            color: #fff;
+            background: linear-gradient(120deg, #111827 0%, #312e81 55%, #4f46e5 100%);
+        }
+
+        header::after {
+            content: "";
+            position: absolute;
+            width: 260px;
+            height: 260px;
+            right: 7%;
+            top: -150px;
+            border: 1px solid rgba(255,255,255,.18);
+            border-radius: 50%;
+            box-shadow: 0 0 0 28px rgba(255,255,255,.035), 0 0 0 58px rgba(255,255,255,.025);
+            pointer-events: none;
+        }
+
+        header h1 {
+            position: relative;
+            z-index: 1;
+            margin: 0 0 7px;
+            font-size: clamp(1.8rem, 4vw, 2.55rem);
+            letter-spacing: -.04em;
+        }
+
+        header p {
+            position: relative;
+            z-index: 1;
+            margin: 0;
+            max-width: 650px;
+            color: #dbeafe;
+            font-size: 1rem;
+        }
+
+        main { max-width: 1120px; margin: 28px auto 44px; padding: 0 20px; }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+
+        .stat, .panel {
+            min-width: 0;
+            background: rgba(255,255,255,.96);
+            border: 1px solid rgba(226,232,240,.9);
+            border-radius: 18px;
+            box-shadow: var(--shadow);
+        }
+
+        .stat { position: relative; padding: 22px 24px; overflow: hidden; }
+        .stat::after {
+            content: "";
+            position: absolute;
+            right: -20px;
+            bottom: -35px;
+            width: 105px;
+            height: 105px;
+            border-radius: 50%;
+            background: var(--soft-primary);
+        }
+        .stat span { position: relative; z-index: 1; color: var(--muted); font-size: .9rem; font-weight: 600; }
+        .stat h2 { position: relative; z-index: 1; margin: 7px 0 0; font-size: 2rem; letter-spacing: -.04em; }
+
+        .panel { padding: 26px; margin-bottom: 20px; }
+        .panel h2 { margin: 0 0 18px; font-size: 1.25rem; letter-spacing: -.02em; }
+        .panel > h2::before { content: ""; display: inline-block; width: 5px; height: 19px; margin-right: 10px; vertical-align: -3px; border-radius: 5px; background: var(--primary); }
+
+        label { display: block; margin: 14px 0 7px; color: #334155; font-size: .9rem; font-weight: 700; }
+        input, textarea, select {
+            width: 100%;
+            padding: 12px 14px;
+            color: var(--ink);
+            background: #fbfcff;
+            border: 1px solid #d8e0ec;
+            border-radius: 10px;
+            font: inherit;
+            outline: none;
+            transition: border-color .18s, box-shadow .18s, background .18s;
+        }
+        input:focus, textarea:focus, select:focus {
+            background: #fff;
+            border-color: #818cf8;
+            box-shadow: 0 0 0 4px rgba(99,102,241,.12);
+        }
+        textarea { min-height: 120px; resize: vertical; }
+        input::placeholder, textarea::placeholder { color: #9aa5b5; }
+
+        button {
+            margin: 12px 8px 0 0;
+            padding: 11px 16px;
+            color: #fff;
+            background: var(--primary);
+            border: 1px solid transparent;
+            border-radius: 10px;
+            font: inherit;
+            font-size: .92rem;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(79,70,229,.14);
+            transition: transform .15s, background .15s, box-shadow .15s;
+        }
+        button:hover { background: var(--primary-dark); box-shadow: 0 6px 14px rgba(79,70,229,.2); transform: translateY(-1px); }
+        button:active { transform: translateY(0); }
+        button:disabled { opacity: .6; cursor: wait; transform: none; }
+
+        #showLoginBtn, #showSignupBtn, #resetFiltersBtn {
+            color: #3730a3;
+            background: var(--soft-primary);
+            border-color: #e0e7ff;
+            box-shadow: none;
+        }
+        #showLoginBtn:hover, #showSignupBtn:hover, #resetFiltersBtn:hover { background: #e0e7ff; }
+        #logoutBtn { background: #fff1f2; color: #be123c; border-color: #ffe4e6; box-shadow: none; }
+        #logoutBtn:hover { background: #ffe4e6; }
+
+        #authForm { max-width: 560px; }
+        #authMessage, #message { margin-top: 14px; font-size: .92rem; font-weight: 600; overflow-wrap: anywhere; }
+        .error { color: #b91c1c; }
+        .success { color: #15803d; }
+        #loggedInInfo { padding: 11px 14px; background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; border-radius: 10px; overflow-wrap: anywhere; }
+
+        .issue {
+            position: relative;
+            margin-top: 14px;
+            padding: 20px;
+            border: 1px solid var(--line);
+            border-radius: 14px;
+            background: linear-gradient(145deg, #fff, #fcfdff);
+            overflow-wrap: anywhere;
+            transition: border-color .18s, box-shadow .18s, transform .18s;
+        }
+        .issue:hover { border-color: #c7d2fe; box-shadow: 0 8px 20px rgba(30,41,59,.06); transform: translateY(-1px); }
+        .issue h3 { margin: 0 0 10px; font-size: 1.06rem; letter-spacing: -.015em; }
+        .issue p { margin: 8px 0 14px; color: #526078; }
+        .meta { color: #475569; line-height: 1.8; font-size: .92rem; }
+        .priority-high { color: #b91c1c; font-weight: 800; }
+        .priority-medium { color: #b45309; font-weight: 800; }
+        .priority-low { color: #15803d; font-weight: 800; }
+        .issue .filters { align-items: end; margin-top: 12px; padding-top: 12px; border-top: 1px solid #edf0f5; }
+        .issue .filters label { margin: 0; }
+        .issue .filters button { margin-top: 0; }
+
+        .filters { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-top: 16px; }
+        .filters label { margin-top: 0; }
+        .empty { color: var(--muted); }
+        #resultsCount { margin: 15px 0 8px; font-size: .9rem; }
+        footer { text-align: center; padding: 24px 18px 32px; color: #7b8798; font-size: .88rem; }
+
+        [hidden] { display: none !important; }
+
+        @media (max-width: 650px) {
+            header { padding: 28px 20px; }
+            main { margin-top: 18px; padding: 0 12px; }
+            .stats { grid-template-columns: 1fr; gap: 10px; }
+            .stat { padding: 17px 20px; }
+            .stat h2 { font-size: 1.7rem; }
+            .panel { padding: 19px; border-radius: 15px; }
+            .issue { padding: 16px; }
+            .filters { grid-template-columns: 1fr; }
+            button { max-width: 100%; }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>AI Smart Issue Router</h1>
+        <p>Smart issue management powered by Gemini AI. Submit, track, and route issues to the right team.</p>
+    </header>
+
+    <main>
+        <section class="panel" id="authPanel">
+            <h2>Account Access</h2>
+
+            <div id="authButtons">
+                <button type="button" id="showLoginBtn">Login</button>
+                <button type="button" id="showSignupBtn">Create Account</button>
+            </div>
+
+            <form id="authForm" hidden>
+                <label for="authName" id="authNameLabel" hidden>Full Name</label>
+                <input id="authName" type="text" placeholder="Enter your name" autocomplete="name" hidden>
+
+                <label for="authEmail">Email</label>
+                <input id="authEmail" type="email" placeholder="Enter your email" autocomplete="email" required>
+
+                <label for="authPassword">Password</label>
+                <input id="authPassword" type="password" placeholder="Enter your password" autocomplete="current-password" minlength="6" required>
+
+                <button type="submit" id="authSubmitBtn">Login</button>
+                <button type="button" id="cancelAuthBtn">Cancel</button>
+                <p id="authMessage" aria-live="polite"></p>
+            </form>
+
+            <div id="loggedInInfo" hidden>
+                <strong>Logged in:</strong> <span id="loggedInName"></span>
+                <button type="button" id="logoutBtn">Logout</button>
+            </div>
+        </section>
+
+        <section id="appPanel" hidden>
+            <div class="stats">
+                <div class="stat">
+                    <span>Total Issues</span>
+                    <h2 id="totalIssues">0</h2>
+                </div>
+                <div class="stat">
+                    <span>High Priority</span>
+                    <h2 id="highIssues">0</h2>
+                </div>
+                <div class="stat">
+                    <span>Open Issues</span>
+                    <h2 id="openIssues">0</h2>
+                </div>
+            </div>
+
+            <section class="panel">
+                <h2>Submit a New Issue</h2>
+                <form id="issueForm">
+                    <label for="issueTitle">Issue Title</label>
+                    <input id="issueTitle" type="text" maxlength="150" placeholder="Example: Unable to login to my account" required>
+
+                    <label for="issueDescription">Describe the issue</label>
+                    <textarea id="issueDescription" maxlength="3000" placeholder="Explain what happened and what help you need..." required></textarea>
+
+                    <button type="submit" id="submitIssueBtn">Submit Issue with AI Routing</button>
+                </form>
+                <p id="message" aria-live="polite"></p>
+            </section>
+
+            <section class="panel">
+                <h2>Issue Dashboard</h2>
+
+                <div class="filters">
+                    <div>
+                        <label for="searchInput">Search Issues</label>
+                        <input id="searchInput" type="search" placeholder="Search title or description...">
+                    </div>
+                    <div>
+                        <label for="categoryFilter">Category</label>
+                        <select id="categoryFilter">
+                            <option value="">All Categories</option>
+                            <option value="Account">Account</option>
+                            <option value="Payment">Payment</option>
+                            <option value="Technical">Technical</option>
+                            <option value="Delivery">Delivery</option>
+                            <option value="General">General</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="priorityFilter">Priority</label>
+                        <select id="priorityFilter">
+                            <option value="">All Priorities</option>
+                            <option value="High">High</option>
+                            <option value="Medium">Medium</option>
+                            <option value="Low">Low</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="statusFilter">Status</label>
+                        <select id="statusFilter">
+                            <option value="">All Statuses</option>
+                            <option value="Open">Open</option>
+                            <option value="In Progress">In Progress</option>
+                            <option value="Resolved">Resolved</option>
+                        </select>
+                    </div>
+                </div>
+
+                <button type="button" id="refreshBtn">Refresh Issues</button>
+                <button type="button" id="resetFiltersBtn">Reset Filters</button>
+
+                <p id="resultsCount" class="empty">Loading issues...</p>
+                <div id="issuesList"></div>
+            </section>
+        </section>
+    </main>
+
+    <footer>AI Smart Issue Router · Powered by Gemini AI</footer>
+
+    <script>
+        const API_URL = "http://localhost:3000/api";
+        const TOKEN_KEY = "issueRouterToken";
+
+        let authMode = "login";
+        let allIssues = [];
+        let currentUser = null;
+        let authToken = localStorage.getItem(TOKEN_KEY);
+
+        const authPanel = document.getElementById("authPanel");
+        const authButtons = document.getElementById("authButtons");
+        const authForm = document.getElementById("authForm");
+        const authName = document.getElementById("authName");
+        const authNameLabel = document.getElementById("authNameLabel");
+        const authEmail = document.getElementById("authEmail");
+        const authPassword = document.getElementById("authPassword");
+        const authSubmitBtn = document.getElementById("authSubmitBtn");
+        const authMessage = document.getElementById("authMessage");
+        const loggedInInfo = document.getElementById("loggedInInfo");
+        const loggedInName = document.getElementById("loggedInName");
+        const appPanel = document.getElementById("appPanel");
+        const issueForm = document.getElementById("issueForm");
+        const issueTitle = document.getElementById("issueTitle");
+        const issueDescription = document.getElementById("issueDescription");
+        const submitIssueBtn = document.getElementById("submitIssueBtn");
+        const message = document.getElementById("message");
+        const issuesList = document.getElementById("issuesList");
+        const resultsCount = document.getElementById("resultsCount");
+        const searchInput = document.getElementById("searchInput");
+        const categoryFilter = document.getElementById("categoryFilter");
+        const priorityFilter = document.getElementById("priorityFilter");
+        const statusFilter = document.getElementById("statusFilter");
+
+        function setMessage(element, text, type = "") {
+            element.textContent = text;
+            element.className = type;
+        }
+
+        function escapeHTML(value) {
+            return String(value ?? "").replace(/[&<>"']/g, character => ({
+                "&": "&amp;",
+                "<": "&lt;",
+                ">": "&gt;",
+                '"': "&quot;",
+                "'": "&#39;"
+            })[character]);
+        }
+
+        async function apiRequest(endpoint, options = {}) {
+            const headers = {
+                "Content-Type": "application/json",
+                ...(options.headers || {})
+            };
+
+            if (authToken) {
+                headers.Authorization = `Bearer ${authToken}`;
+            }
+
+            const response = await fetch(`${API_URL}${endpoint}`, {
+                ...options,
+                headers
+            });
+
+            const data = await response.json().catch(() => ({}));
+
+            if (!response.ok) {
+                if (response.status === 401 && authToken) {
+                    logout(false);
+                }
+                throw new Error(data.message || data.error || `Request failed (${response.status})`);
+            }
+
+            return data;
+        }
+
+        function showAuthMode(mode) {
+            authMode = mode;
+            authForm.hidden = false;
+            authButtons.hidden = true;
+            authName.hidden = mode !== "signup";
+            authNameLabel.hidden = mode !== "signup";
+            authName.required = mode === "signup";
+            authPassword.autocomplete = mode === "signup" ? "new-password" : "current-password";
+            authSubmitBtn.textContent = mode === "signup" ? "Create Account" : "Login";
+            setMessage(authMessage, "");
+            authForm.reset();
+            authEmail.focus();
+        }
+
+        function showLoggedIn(user) {
+            currentUser = user;
+            authPanel.hidden = false;
+            authForm.hidden = true;
+            authButtons.hidden = true;
+            loggedInInfo.hidden = false;
+            appPanel.hidden = false;
+            loggedInName.textContent = user.name || user.email || "User";
+        }
+
+        function showLoggedOut() {
+            currentUser = null;
+            allIssues = [];
+            authForm.hidden = true;
+            authButtons.hidden = false;
+            loggedInInfo.hidden = true;
+            appPanel.hidden = true;
+            authPanel.hidden = false;
+            updateStats();
+            renderIssues();
+        }
+
+        function logout(showMessage = true) {
+            authToken = null;
+            localStorage.removeItem(TOKEN_KEY);
+            showLoggedOut();
+            if (showMessage) {
+                setMessage(authMessage, "You have logged out successfully.", "success");
+            }
+        }
+
+        async function verifySavedLogin() {
+            if (!authToken) {
+                showLoggedOut();
+                return false;
+            }
+
+            try {
+                const data = await apiRequest("/auth/me");
+                const user = data.user || data;
+                showLoggedIn(user);
+                return true;
+            } catch (error) {
+                authToken = null;
+                localStorage.removeItem(TOKEN_KEY);
+                showLoggedOut();
+                return false;
+            }
+        }
+
+        document.getElementById("showLoginBtn").addEventListener("click", () => showAuthMode("login"));
+        document.getElementById("showSignupBtn").addEventListener("click", () => showAuthMode("signup"));
+
+        document.getElementById("cancelAuthBtn").addEventListener("click", () => {
+            authForm.hidden = true;
+            authButtons.hidden = false;
+            setMessage(authMessage, "");
+        });
+
+        document.getElementById("logoutBtn").addEventListener("click", () => logout());
+
+        authForm.addEventListener("submit", async event => {
+            event.preventDefault();
+            setMessage(authMessage, "");
+
+            const name = authName.value.trim();
+            const email = authEmail.value.trim();
+            const password = authPassword.value;
+
+            if (authMode === "signup" && !name) {
+                setMessage(authMessage, "Please enter your name.", "error");
+                return;
+            }
+
+            authSubmitBtn.disabled = true;
+            authSubmitBtn.textContent = authMode === "signup" ? "Creating account..." : "Logging in...";
+
+            try {
+                const endpoint = authMode === "signup" ? "/auth/signup" : "/auth/login";
+                const body = authMode === "signup"
+                    ? { name, email, password }
+                    : { email, password };
+
+                const data = await apiRequest(endpoint, {
+                    method: "POST",
+                    body: JSON.stringify(body)
+                });
+
+                const token = data.token || data.accessToken;
+                if (!token) {
+                    throw new Error("Authentication succeeded but no token was returned by the server.");
+                }
+
+                authToken = token;
+                localStorage.setItem(TOKEN_KEY, token);
+
+                const user = data.user || {
+                    name: data.name || name || email,
+                    email: data.email || email
+                };
+
+                showLoggedIn(user);
+                setMessage(message, authMode === "signup" ? "Account created successfully!" : "Login successful!", "success");
+                await loadIssues();
+            } catch (error) {
+                setMessage(authMessage, error.message, "error");
+            } finally {
+                authSubmitBtn.disabled = false;
+                authSubmitBtn.textContent = authMode === "signup" ? "Create Account" : "Login";
+            }
+        });
+
+        issueForm.addEventListener("submit", async event => {
+            event.preventDefault();
+            setMessage(message, "");
+
+            const title = issueTitle.value.trim();
+            const description = issueDescription.value.trim();
+
+            if (!title || !description) {
+                setMessage(message, "Please enter both the issue title and description.", "error");
+                return;
+            }
+
+            submitIssueBtn.disabled = true;
+            submitIssueBtn.textContent = "Routing issue with AI...";
+
+            try {
+                const data = await apiRequest("/issues", {
+                    method: "POST",
+                    body: JSON.stringify({ title, description })
+                });
+
+                issueForm.reset();
+                setMessage(
+                    message,
+                    data.routingMethod === "gemini"
+                        ? "Issue submitted and routed successfully using Gemini AI!"
+                        : "Issue submitted. Rule-based routing was used.",
+                    "success"
+                );
+
+                await loadIssues();
+            } catch (error) {
+                setMessage(message, error.message, "error");
+            } finally {
+                submitIssueBtn.disabled = false;
+                submitIssueBtn.textContent = "Submit Issue with AI Routing";
+            }
+        });
+
+        function getIssueId(issue) {
+            return issue.id ?? issue._id;
+        }
+
+        function getPriorityClass(priority) {
+            const value = String(priority || "").toLowerCase();
+            if (value === "high") return "priority-high";
+            if (value === "medium") return "priority-medium";
+            if (value === "low") return "priority-low";
+            return "";
+        }
+
+        function updateStats() {
+            document.getElementById("totalIssues").textContent = allIssues.length;
+            document.getElementById("highIssues").textContent =
+                allIssues.filter(issue => String(issue.priority).toLowerCase() === "high").length;
+            document.getElementById("openIssues").textContent =
+                allIssues.filter(issue => String(issue.status || "Open").toLowerCase() === "open").length;
+        }
+
+        function getFilteredIssues() {
+            const search = searchInput.value.trim().toLowerCase();
+            const category = categoryFilter.value;
+            const priority = priorityFilter.value;
+            const status = statusFilter.value;
+
+            return allIssues.filter(issue => {
+                const text = `${issue.title || ""} ${issue.description || ""} ${issue.category || ""} ${issue.assignedTeam || issue.team || ""}`.toLowerCase();
+
+                return (!search || text.includes(search))
+                    && (!category || issue.category === category)
+                    && (!priority || issue.priority === priority)
+                    && (!status || (issue.status || "Open") === status);
+            });
+        }
+
+        function renderIssues() {
+            if (!issuesList || !resultsCount) return;
+
+            if (!authToken) {
+                issuesList.innerHTML = "";
+                resultsCount.textContent = "Login to view your issues.";
+                return;
+            }
+
+            const filteredIssues = getFilteredIssues();
+
+            resultsCount.textContent = `Showing ${filteredIssues.length} of ${allIssues.length} issue(s).`;
+
+            if (filteredIssues.length === 0) {
+                issuesList.innerHTML = '<p class="empty">No issues found. Try changing the filters or submit a new issue.</p>';
+                return;
+            }
+
+            issuesList.innerHTML = filteredIssues.map(issue => {
+                const id = getIssueId(issue);
+                const title = escapeHTML(issue.title || "Untitled Issue");
+                const description = escapeHTML(issue.description || "");
+                const category = escapeHTML(issue.category || "General");
+                const team = escapeHTML(issue.assignedTeam || issue.team || "Support Team");
+                const priority = escapeHTML(issue.priority || "Medium");
+                const status = escapeHTML(issue.status || "Open");
+                const createdAt = issue.createdAt
+                    ? escapeHTML(new Date(issue.createdAt).toLocaleString())
+                    : "Date not available";
+
+                return `
+                    <article class="issue">
+                        <h3>#${escapeHTML(id)} — ${title}</h3>
+                        <p>${description}</p>
+
+                        <div class="meta">
+                            <div><strong>Category:</strong> ${category}</div>
+                            <div><strong>Assigned Team:</strong> ${team}</div>
+                            <div><strong>Priority:</strong>
+                                <span class="${getPriorityClass(priority)}">${priority}</span>
+                            </div>
+                            <div><strong>Status:</strong> ${status}</div>
+                            <div><strong>Created:</strong> ${createdAt}</div>
+                        </div>
+
+                        <div class="filters">
+                            <div>
+                                <label for="status-${escapeHTML(id)}">Update Status</label>
+                                <select id="status-${escapeHTML(id)}">
+                                    <option value="Open" ${status === "Open" ? "selected" : ""}>Open</option>
+                                    <option value="In Progress" ${status === "In Progress" ? "selected" : ""}>In Progress</option>
+                                    <option value="Resolved" ${status === "Resolved" ? "selected" : ""}>Resolved</option>
+                                </select>
+                            </div>
+                            <div>
+                                <button type="button" data-update-id="${escapeHTML(id)}">Update Status</button>
+                            </div>
+                        </div>
+                    </article>
+                `;
+            }).join("");
+        }
+
+        async function loadIssues() {
+            if (!authToken) {
+                showLoggedOut();
+                return;
+            }
+
+            resultsCount.textContent = "Loading your issues...";
+
+            try {
+                const data = await apiRequest("/issues");
+                const issues = Array.isArray(data) ? data : (data.issues || []);
+                allIssues = issues;
+                updateStats();
+                renderIssues();
+            } catch (error) {
+                allIssues = [];
+                updateStats();
+                renderIssues();
+                setMessage(message, `Could not load issues: ${error.message}`, "error");
+            }
+        }
+
+        issuesList.addEventListener("click", async event => {
+            const button = event.target.closest("button[data-update-id]");
+            if (!button) return;
+
+            const id = button.dataset.updateId;
+            const select = document.getElementById(`status-${id}`);
+            if (!select) return;
+
+            const status = select.value;
+            button.disabled = true;
+            button.textContent = "Updating...";
+
+            try {
+                await apiRequest(`/issues/${encodeURIComponent(id)}/status`, {
+                    method: "PATCH",
+                    body: JSON.stringify({ status })
+                });
+
+                setMessage(message, `Issue #${id} status updated to ${status}.`, "success");
+                await loadIssues();
+            } catch (error) {
+                setMessage(message, `Could not update status: ${error.message}`, "error");
+                button.disabled = false;
+                button.textContent = "Update Status";
+            }
+        });
+
+        [searchInput, categoryFilter, priorityFilter, statusFilter].forEach(element => {
+            element.addEventListener("input", renderIssues);
+            element.addEventListener("change", renderIssues);
+        });
+
+        document.getElementById("refreshBtn").addEventListener("click", loadIssues);
+
+        document.getElementById("resetFiltersBtn").addEventListener("click", () => {
+            searchInput.value = "";
+            categoryFilter.value = "";
+            priorityFilter.value = "";
+            statusFilter.value = "";
+            renderIssues();
+        });
+
+        async function initializeApp() {
+            const validLogin = await verifySavedLogin();
+
+            if (validLogin) {
+                await loadIssues();
+            } else {
+                allIssues = [];
+                updateStats();
+                renderIssues();
+            }
+        }
+
+        initializeApp();
+    </script>
+</body>
+</html>
