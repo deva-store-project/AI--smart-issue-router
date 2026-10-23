@@ -49,7 +49,12 @@ const VALID_TEAMS = [
 const VALID_PRIORITIES = ["High", "Medium", "Low"];
 
 app.use(express.json({ limit: "100kb" }));
-app.use(cors());
+
+app.use(cors({
+    origin: "https://deva-store-project.github.io",
+    methods: ["GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"]
+}));
 
 // ---------- File Helpers ----------
 
